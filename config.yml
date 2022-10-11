@@ -1,0 +1,17 @@
+# Give mesh filenames as relative paths from repo root
+# or absolute paths
+meshes:
+  - data/demo_head.ply
+  - data/demo_head2.OBJ
+
+
+# Rerun algs even if mesh already exists.
+force_rerun: false
+# Open matlab plots during run
+plot: true
+# Write .dat files of each mesh for use in bem solver
+write_bem_files: false
+# Clean holes and self-intersections from mesh
+clean: true
+# Results file
+results_file: results.txt

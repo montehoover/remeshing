@@ -1,0 +1,11 @@
+function [normals,centers,areas]=getnormalscenters(faces,vertices)
+normals=zeros(size(faces));
+x1= vertices(faces(:,1),:);
+x2= vertices(faces(:,2),:);
+x3= vertices(faces(:,3),:);
+n=.5*cross(x2-x1,x3-x1);
+areas=sqrt(dot(n,n,2));
+normals(:,1)=n(:,1)./areas;
+normals(:,2)=n(:,2)./areas;
+normals(:,3)=n(:,3)./areas;
+centers=(x1+x2+x3)/3;
