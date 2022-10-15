@@ -26,8 +26,6 @@
     $ cd /opt/common/matlab-r2015a/extern/engines/python
     $ python setup.py install --prefix="$CONDA_PREFIX/lib/python3.9/site-packages"
     ```
-    Note: on UMIACS machines I had to also use the build location option and then I had to do something manually. I can't remember exactly what I did, but it ended up working in the end.  
-
     Windows:  
     ```
     $ where.exe matlab
