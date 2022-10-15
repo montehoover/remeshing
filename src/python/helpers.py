@@ -69,7 +69,8 @@ def get_config(args):
             meshes += glob.glob(filename)
         
         config["meshes"] = meshes
-        config["results_file"] = open(yaml_dict["results_file"], "a")
+        if yaml_dict["results_file"]:
+            config["results_file"] = open(yaml_dict["results_file"], "a")
         config["plot"] = yaml_dict["plot"]
         config["force_rerun"] = yaml_dict["force_rerun"]
         config["write_bem_files"] = yaml_dict["write_bem_files"]
