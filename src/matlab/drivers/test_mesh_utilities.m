@@ -19,7 +19,7 @@ plotMesh(F, V);
 % x(1:5)
 
 % Test get_mesh_quality()
-[Q, AR_avg, min_angle, max_valence, AR] = get_mesh_quality(F, V);
+[Q, AR_avg, min_angle, AR] = get_mesh_quality(F, V);
 % AR(1:5)
 % AR_avg
 % max_valence
@@ -34,5 +34,8 @@ mesh_checker2q(F, V);
 % prefix = "C:\Users\monte\code\remeshing\data\BEM\demo_head_only2";
 % writePLY(prefix + "_bad.ply", V, F, "ascii");
 % mesh_checker2q(F, V);
+
+[F, V] = EllipsoidMeshFromDisk(10,1,1,1,1);
+writePLY("data\sphere.ply", V, F);
 
 disp("Tests complete.")
