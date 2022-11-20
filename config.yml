@@ -10,9 +10,7 @@ force_rerun: false
 # Open matlab plots during run
 plot: true
 # Write .dat files of each mesh for use in bem solver
-write_bem_files: true
-# BEM solver expects scale in meters. Optionally change the scale of the mesh with "mm_to_m"
-bem_scale: mm_to_m
+write_bem_files: false
 # Clean holes and self-intersections from mesh
 clean: true
 # Results file

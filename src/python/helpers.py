@@ -74,7 +74,6 @@ def get_config(args):
         config["plot"] = yaml_dict["plot"]
         config["force_rerun"] = yaml_dict["force_rerun"]
         config["write_bem_files"] = yaml_dict["write_bem_files"]
-        config["bem_scale"] = yaml_dict["bem_scale"]
         config["clean"] = yaml_dict["clean"]
 
     return config
@@ -437,7 +436,7 @@ def write_mesh_to_dat_files(mesh, F_filename, V_filename):
         for x, y, z in mesh.V.astype(float):
             f.write(f"{x:30.18f} {y:30.18f} {z:30.18f}\n")
 
-def write_bem_files(mesh, filename, bem_scale, simplify_names=False):
+def write_bem_files(mesh, filename, simplify_names=False):
     """
     Write a mesh to <filename>_faces.dat and <filename>_vertices.dat for use
     in BEM solver. Change from mm to m scale and change from 0-based to 1-based
@@ -592,7 +591,7 @@ def print_mesh_stats(stats, name="placeholder", file=sys.stdout, stats_dict=None
     file.flush() # Force this to be written now instead of at the end of the program
     
 
-def run_alg(func, orig_mesh, params, mesh_filename, alg_descriptor, outfile=sys.stdout, plot=True, force_rerun=False, to_bem=False, bem_scale=None, stats_dict=None, clean_flag=False, run_haus=True):
+def run_alg(func, orig_mesh, params, mesh_filename, alg_descriptor, outfile=sys.stdout, plot=True, force_rerun=False, to_bem=False, stats_dict=None, clean_flag=False, run_haus=True):
     new_filename = get_new_filename(mesh_filename, alg_descriptor)
     if Path(new_filename).exists() and not force_rerun:
         print(f"Recording stats for {new_filename} found on disk.")
@@ -609,7 +608,7 @@ def run_alg(func, orig_mesh, params, mesh_filename, alg_descriptor, outfile=sys.
     if plot:
         plot_mesh(new_mesh)
     if to_bem:
-        write_bem_files(new_mesh, new_filename, bem_scale)
+        write_bem_files(new_mesh, new_filename)
     stats = get_mesh_stats(new_mesh, orig_mesh, run_haus, stats_dict)
     if not stats["is_correct"] and clean_flag:
         print(f"Found the following issues: {stats['msg']}")
@@ -621,7 +620,7 @@ def run_alg(func, orig_mesh, params, mesh_filename, alg_descriptor, outfile=sys.
 
 
 @time_it # Print runtime information for all calls of this
-def remesh_isotropic(mesh, target_edge_len=None, target_num_faces=None, iterations=9, checksurfdist=True, selectedonly=False, featuredeg=30):
+def remesh_isotropic(mesh, target_edge_len=None, target_num_faces=None, iterations=9, checksurfdist=True):
     """
     MeshLab's implemention of Botsch & Kobbelt's local modifications with projection remeshing algorithm: https://dl.acm.org/doi/10.1145/1057432.1057457
     https://pymeshlab.readthedocs.io/en/latest/filter_list.html?highlight=isotropic#meshing_isotropic_explicit_remeshing
@@ -641,7 +640,7 @@ def remesh_isotropic(mesh, target_edge_len=None, target_num_faces=None, iteratio
     else:
         # If no edge length is provided, use 1% of the bounding box diagonal as the target length (this is the meshlab default)
         targetlen=ml.Percentage(1)
-    ms.meshing_isotropic_explicit_remeshing(targetlen=targetlen, iterations=iterations, checksurfdist=checksurfdist, selectedonly=selectedonly, featuredeg=featuredeg)
+    ms.meshing_isotropic_explicit_remeshing(targetlen=targetlen, iterations=iterations, checksurfdist=checksurfdist)
     F = ms.current_mesh().face_matrix()
     V = ms.current_mesh().vertex_matrix()
     new_mesh = Mesh(F, V)

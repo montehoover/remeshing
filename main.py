@@ -8,7 +8,6 @@ def run(config):
     plot_flag = config["plot"]
     rerun_flag = config["force_rerun"]
     bem_flag = config["write_bem_files"]
-    bem_scale = config["bem_scale"]
     clean_flag = config["clean"]
     results_file = config["results_file"]
     stats_dict = {}
@@ -29,7 +28,7 @@ def run(config):
         alg_descriptor = ""
         alg = print_stats_only
         params = {"filename": edit_filename(filename, alg_descriptor)}
-        new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, bem_scale, clean_flag=clean_flag, run_haus=False)
+        new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, clean_flag=clean_flag, run_haus=False)
 
         #######################################
         # Enter any remeshing algorithms here
