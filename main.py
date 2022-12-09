@@ -24,25 +24,60 @@ def run(config):
             continue
         
         # Open mesh file and print stats
-        orig_edge_len = original_mesh.avg_edge_len()
-        alg_descriptor = ""
-        alg = print_stats_only
-        params = {"filename": edit_filename(filename, alg_descriptor)}
-        new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, clean_flag=clean_flag, run_haus=False)
+        # alg_descriptor = ""
+        # alg = print_stats_only
+        # params = {"filename": edit_filename(filename, alg_descriptor)}
+        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, clean_flag=clean_flag, run_haus=False, stats_dict=stats_dict)
 
         #######################################
         # Enter any remeshing algorithms here
         #######################################
+
+        alg_descriptor = "poisson"
+        alg = poisson_reconstruction
+        params = {}
+        new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, clean_flag=clean_flag, run_haus=False, stats_dict=stats_dict)
+
+        alg_descriptor = "iso_3mm"
+        alg = remesh_isotropic
+        params = {"target_edge_len": 3, "iterations": 9}
+        new_mesh = run_alg(alg, new_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, clean_flag=clean_flag)
 
         # alg_descriptor = "iso_same"
         # alg = remesh_isotropic
         # params = {"target_num_faces": original_mesh.n_faces * 1.02, "iterations": 9}
         # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, outfile, plot_flag, rerun_flag, bem_flag)
 
-        # alg_descriptor = "iso_2mm"
-        # alg = remesh_isotropic
-        # params = {"target_edge_len": 2.0, "iterations": 9}
-        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag)
+        # alg_descriptor = "optimesh_CVT"
+        # alg = remesh_optimesh
+        # params = {"alg": "CVT (full)"}
+        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, clean_flag=clean_flag, run_haus=True)
+
+        # alg_descriptor = "optimesh_ODT"
+        # alg = remesh_optimesh
+        # params = {"alg": "ODT (fixed-point)"}
+        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, clean_flag=clean_flag, run_haus=True)
+
+        # alg_descriptor = "optimesh_CPT"
+        # alg = remesh_optimesh
+        # params = {"alg": "CPT (linear-solve)"}
+        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, outfile, plot_flag, rerun_flag, bem_flag)
+
+        # alg_descriptor = "cgal2"
+        # alg = remesh_cgal
+        # params = {"target_edge_len":  orig_edge_len, "min_angle": 32, "max_distance": orig_edge_len / 25}
+        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, outfile, plot_flag, rerun_flag)
+
+        # alg_descriptor = "cgal1"
+        # alg = remesh_cgal
+        # params = {"target_edge_len":  orig_edge_len, "min_angle": 31, "max_distance": orig_edge_len / 33}
+        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, outfile, plot_flag, rerun_flag)
+
+        # # Print stats comparison between mesh listed in config.yml and another mesh with the same name and <alg_descriptor> added
+        # alg_descriptor = "parametric"
+        # alg = print_stats_only
+        # params = {"filename": edit_filename(filename, alg_descriptor)}
+        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, outfile, plot_flag, rerun_flag, bem_flag, stats_dict)
 
         #######################################
         # End of algorithms

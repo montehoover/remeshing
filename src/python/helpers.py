@@ -388,7 +388,8 @@ def read_mesh_from_file(filename):
             raise ValueError(f"File '{filename}' was not of any known mesh type.") from e
     F = ms.current_mesh().face_matrix()
     V = ms.current_mesh().vertex_matrix()
-    if len(F) == 0 or len(V) == 0:
+    # if len(F) == 0 or len(V) == 0:
+    if len(V) == 0:
         raise ValueError(f"File '{filename}' was not of any known mesh type.")
     mesh = Mesh(F, V)
     return mesh
@@ -436,7 +437,7 @@ def write_mesh_to_dat_files(mesh, F_filename, V_filename):
         for x, y, z in mesh.V.astype(float):
             f.write(f"{x:30.18f} {y:30.18f} {z:30.18f}\n")
 
-def write_bem_files(mesh, filename, simplify_names=False):
+def write_bem_files(mesh, filename, simplify_names=True):
     """
     Write a mesh to <filename>_faces.dat and <filename>_vertices.dat for use
     in BEM solver. Change from mm to m scale and change from 0-based to 1-based
@@ -453,8 +454,11 @@ def write_bem_files(mesh, filename, simplify_names=False):
     # Prepare new filenames
     if simplify_names:
         orig_full_path = Path(filename)
-        V_filename = orig_full_path.with_name("Vertices.dat")
-        F_filename = orig_full_path.with_name("Faces.dat")
+        # Create a direct
+        new_dir = Path(orig_full_path.parent, orig_full_path.stem)
+        new_dir.mkdir(exist_ok=True)
+        V_filename = Path(new_dir, "Vertices.dat")
+        F_filename = Path(new_dir, "Faces.dat")
     else:
         V_filename = edit_filename(filename, suffix="vertices", extension=".dat")
         F_filename = edit_filename(filename, suffix="faces", extension=".dat")
@@ -552,8 +556,8 @@ def get_mesh_stats(mesh, comparison_mesh=None, run_haus=True, stats_dict=None, n
     if stats_dict is None:
         Q_exp, AR_avg, min_angle, n_faces, avg_edge_len, is_correct, msg = get_stats_brief(mesh)
     else:
-        Q, AR, AR_avg, AR_min, AR7, AR4, AR3, min_angle, valence, n_faces, avg_edge_len, concave, convex, total_curv, is_correct, msg = get_stats_full(mesh)
-        stats_dict[name] = [n_faces, Q, AR_avg, AR_min, AR7, AR4, AR3, min_angle, valence, haus_max, haus_mean, concave, convex, total_curv, AR]
+        Q_exp, AR, AR_avg, AR_min, AR7, AR4, AR3, min_angle, valence, n_faces, avg_edge_len, concave, convex, total_curv, is_correct, msg = get_stats_full(mesh)
+        stats_dict[name] = [n_faces, Q_exp, AR_avg, AR_min, AR7, AR4, AR3, min_angle, valence, haus_max, haus_mean, concave, convex, total_curv, AR]
     stats = {}
     stats["AR_avg"] = AR_avg
     stats["haus_max"] = haus_max
@@ -609,7 +613,7 @@ def run_alg(func, orig_mesh, params, mesh_filename, alg_descriptor, outfile=sys.
         plot_mesh(new_mesh)
     if to_bem:
         write_bem_files(new_mesh, new_filename)
-    stats = get_mesh_stats(new_mesh, orig_mesh, run_haus, stats_dict)
+    stats = get_mesh_stats(new_mesh, orig_mesh, run_haus, stats_dict, name=new_filename)
     if not stats["is_correct"] and clean_flag:
         print(f"Found the following issues: {stats['msg']}")
         new_mesh = clean_mesh(new_mesh)
@@ -710,6 +714,20 @@ def remesh_cgal(mesh, target_edge_len, min_angle=25, max_distance=None, max_feat
         verbose=True,
     )
     new_mesh = Mesh(mesh.cells_dict['triangle'], mesh.points)
+    return new_mesh
+
+@time_it # Print runtime information for all calls of this
+def poisson_reconstruction(mesh):
+    """
+    Creates watertight surfaces from point cloud with normals.
+    """
+    ms = ml.MeshSet()
+    ms.add_mesh(ml.Mesh(mesh.V, mesh.F))
+    ms.compute_normal_for_point_clouds()
+    ms.generate_surface_reconstruction_screened_poisson()
+    F = ms.current_mesh().face_matrix()
+    V = ms.current_mesh().vertex_matrix()
+    new_mesh = Mesh(F, V)
     return new_mesh
 
 @time_it # Print runtime information for all calls of this
