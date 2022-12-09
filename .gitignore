@@ -1,2 +1,3 @@
 .vscode/
 *.pyc
+config_custom.yml

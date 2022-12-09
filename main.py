@@ -23,8 +23,7 @@ def run(config):
             print(e)
             continue
         
-        # Open mesh file and print stats
-        orig_edge_len = original_mesh.avg_edge_len()
+        # Just print stats
         alg_descriptor = ""
         alg = print_stats_only
         params = {"filename": edit_filename(filename, alg_descriptor)}
@@ -37,12 +36,39 @@ def run(config):
         # alg_descriptor = "iso_same"
         # alg = remesh_isotropic
         # params = {"target_num_faces": original_mesh.n_faces * 1.02, "iterations": 9}
-        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, outfile, plot_flag, rerun_flag, bem_flag)
+        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, clean_flag=clean_flag, run_haus=True)
 
         # alg_descriptor = "iso_2mm"
         # alg = remesh_isotropic
         # params = {"target_edge_len": 2.0, "iterations": 9}
-        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag)
+        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, clean_flag=clean_flag, run_haus=True)
+
+        # alg_descriptor = "optimesh_CVT"
+        # alg = remesh_optimesh
+        # params = {"alg": "CVT (full)"}
+        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, clean_flag=clean_flag, run_haus=True)
+
+        # alg_descriptor = "optimesh_ODT"
+        # alg = remesh_optimesh
+        # params = {"alg": "ODT (fixed-point)"}
+        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, clean_flag=clean_flag, run_haus=True)
+
+        # alg_descriptor = "optimesh_CPT"
+        # alg = remesh_optimesh
+        # params = {"alg": "CPT (linear-solve)"}
+        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, clean_flag=clean_flag, run_haus=True)
+
+        # # Intended only for point clouds
+        # alg_descriptor = "poisson"
+        # alg = poisson_reconstruction
+        # params = {}
+        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, clean_flag=clean_flag, run_haus=False)
+
+        # # Print stats comparison between mesh listed in config.yml and another mesh with the same name and <alg_descriptor> added
+        # alg_descriptor = "parametric"
+        # alg = print_stats_only
+        # params = {"filename": edit_filename(filename, alg_descriptor)}
+        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, clean_flag=clean_flag, run_haus=True)
 
         #######################################
         # End of algorithms
@@ -59,8 +85,7 @@ def run(config):
         input("\nPress enter to close the plots...\n> ")
         print("Closing...")
 
-
-if __name__ == "__main__":
+def parse(argv):
     parser = argparse.ArgumentParser(
         description="""
                     Analyze a series of meshes with options for remeshing and repairing.
@@ -71,11 +96,14 @@ if __name__ == "__main__":
         "-a", "--alg", help="Remeshing algorithm to apply.")
     parser.add_argument("-c", "--config",
                         help="Run on a series of meshes and algs specified by a yaml config file.")
-    # parser.add_argument("-c", "--config", default="config.yml",
-    #                     help="Run on a series of meshes and algs specified by a yaml config file.")
-    if len(sys.argv) <= 1:
+    if len(argv) <= 1:
         # Print help message and exit
         parser.parse_args(["--help"])
-    args = parser.parse_args()
+    # Normally you would just call parser.pars_args(), and by default this parses sys.argv[1:]
+    args = parser.parse_args(argv[1:])
+    return args
+
+if __name__ == "__main__":
+    args = parse(sys.argv)
     config = get_config(args)
     run(config)

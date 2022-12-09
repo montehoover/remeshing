@@ -369,6 +369,14 @@ def read_mesh_from_file(filename):
     # iomesh = meshio.read(filename)
     # V = iomesh.points[:,0:3] #Some formats include quality information in vertex matrix
     # F = iomesh.cells_dict['triangle']
+
+    # Handle Faces.dat and Vertices.dat files
+    if "faces.dat" in filename.lower():
+        F_filename = filename
+        V_filename = filename.lower().replace("faces.dat", "vertices.dat")
+        if Path(V_filename).exists():
+            return read_mesh_from_dat_files(F_filename, V_filename)
+
     ms = ml.MeshSet()
     # Read the file, with good error handling
     try:
@@ -380,7 +388,8 @@ def read_mesh_from_file(filename):
             raise ValueError(f"File '{filename}' was not of any known mesh type.") from e
     F = ms.current_mesh().face_matrix()
     V = ms.current_mesh().vertex_matrix()
-    if len(F) == 0 or len(V) == 0:
+    # if len(F) == 0 or len(V) == 0:
+    if len(V) == 0:
         raise ValueError(f"File '{filename}' was not of any known mesh type.")
     mesh = Mesh(F, V)
     return mesh
@@ -399,7 +408,7 @@ def read_mesh_from_dat_files(F_filename, V_filename, keep_mat_indexing=False):
         # If error is due to header on first line then skip it
         if "Wrong number of columns" in message:
             with open(F_filename) as f:
-                faces = np.loadtxt(f, skiprows=1)
+                faces = np.loadtxt(f, skiprows=1, dtype=int)
         else: 
             raise
     try:
@@ -410,7 +419,7 @@ def read_mesh_from_dat_files(F_filename, V_filename, keep_mat_indexing=False):
         # If error is due to header on first line then skip it
         if "Wrong number of columns" in message:
             with open(V_filename) as f:
-                vertices = np.loadtxt(f, skiprows=1)
+                vertices = np.loadtxt(f, skiprows=1, dtype=float)
         else: 
             raise
     mesh = Mesh(faces, vertices)
@@ -421,32 +430,52 @@ def read_mesh_from_dat_files(F_filename, V_filename, keep_mat_indexing=False):
 def write_mesh_to_dat_files(mesh, F_filename, V_filename):
     with open(F_filename, 'w') as f:
         f.write(f"{mesh.n_faces:10d}\n")
-        for v1, v2, v3 in mesh.F:
+        for v1, v2, v3 in mesh.F.astype(int):
             f.write(f"{v1:10d} {v2:11d} {v3:11d}\n")
     with open(V_filename, 'w') as f:
         f.write(f"{mesh.n_vertices:10d}\n")
-        for x, y, z in mesh.V:
+        for x, y, z in mesh.V.astype(float):
             f.write(f"{x:30.18f} {y:30.18f} {z:30.18f}\n")
 
-def write_bem_files(mesh, filename, simplify_names=False):
+def write_bem_files(mesh, filename, simplify_names=True):
     """
     Write a mesh to <filename>_faces.dat and <filename>_vertices.dat for use
     in BEM solver. Change from mm to m scale and change from 0-based to 1-based
     indexing.
     """
-    # Scale and change indexing
-    mesh = change_scale(mesh, scale="mm_to_m")
+    # The BEM solver operates in meters as the unit scale. If the average edge length
+    # is over 1, that indicates our mesh either currently in mm scale and we need to change
+    # it, or the mesh has huge 1 meter long triangle edges and isn't suitable for BEM at all.
+    edge_len = mesh.avg_edge_len()
+    if edge_len > 1:
+        print(f"Detected triangle edges of size {edge_len:.3f}. Assuming this is on mm scale and changing to meter scale.")
+        mesh = change_scale(mesh, scale="mm_to_m")
     mesh = to_mat_indexing(mesh)
     # Prepare new filenames
     if simplify_names:
         orig_full_path = Path(filename)
-        V_filename = orig_full_path.with_name("Vertices.dat")
-        F_filename = orig_full_path.with_name("Faces.dat")
+        # Create a direct
+        new_dir = Path(orig_full_path.parent, orig_full_path.stem)
+        new_dir.mkdir(exist_ok=True)
+        V_filename = Path(new_dir, "Vertices.dat")
+        F_filename = Path(new_dir, "Faces.dat")
     else:
         V_filename = edit_filename(filename, suffix="vertices", extension=".dat")
         F_filename = edit_filename(filename, suffix="faces", extension=".dat")
     # Write the two .dat files
     write_mesh_to_dat_files(mesh, F_filename, V_filename)
+
+def get_new_filename(filename, alg_descriptor):
+    # Handle cases where we are working with faces.dat, vertices.dat file pairs
+    if "faces.dat" in filename.lower():
+        # Often these .dat pairs are simply named "Faces.dat" and "Vertices.dat"
+        # We ultimately want to write out a "x.ply" file, so we need to construct a new name by removing "Faces" and adding the
+        # folder name so it won't be blank.
+        folder_name = Path(filename).parent.name
+        filename = filename.lower().replace("faces.dat", f"{folder_name}.dat")
+        return edit_filename(filename, suffix=alg_descriptor, extension=".ply")
+    else:
+        return edit_filename(filename, suffix=alg_descriptor)
 
 def edit_filename(filename, suffix=None, prefix=None, extension=None):
     """
@@ -527,8 +556,8 @@ def get_mesh_stats(mesh, comparison_mesh=None, run_haus=True, stats_dict=None, n
     if stats_dict is None:
         Q_exp, AR_avg, min_angle, n_faces, avg_edge_len, is_correct, msg = get_stats_brief(mesh)
     else:
-        Q, AR, AR_avg, AR_min, AR7, AR4, AR3, min_angle, valence, n_faces, avg_edge_len, concave, convex, total_curv, is_correct, msg = get_stats_full(mesh)
-        stats_dict[name] = [n_faces, Q, AR_avg, AR_min, AR7, AR4, AR3, min_angle, valence, haus_max, haus_mean, concave, convex, total_curv, AR]
+        Q_exp, AR, AR_avg, AR_min, AR7, AR4, AR3, min_angle, valence, n_faces, avg_edge_len, concave, convex, total_curv, is_correct, msg = get_stats_full(mesh)
+        stats_dict[name] = [n_faces, Q_exp, AR_avg, AR_min, AR7, AR4, AR3, min_angle, valence, haus_max, haus_mean, concave, convex, total_curv, AR]
     stats = {}
     stats["AR_avg"] = AR_avg
     stats["haus_max"] = haus_max
@@ -567,7 +596,7 @@ def print_mesh_stats(stats, name="placeholder", file=sys.stdout, stats_dict=None
     
 
 def run_alg(func, orig_mesh, params, mesh_filename, alg_descriptor, outfile=sys.stdout, plot=True, force_rerun=False, to_bem=False, stats_dict=None, clean_flag=False, run_haus=True):
-    new_filename = edit_filename(mesh_filename, alg_descriptor)
+    new_filename = get_new_filename(mesh_filename, alg_descriptor)
     if Path(new_filename).exists() and not force_rerun:
         print(f"Recording stats for {new_filename} found on disk.")
         new_mesh = read_mesh_from_file(new_filename)
@@ -687,6 +716,20 @@ def remesh_cgal(mesh, target_edge_len, min_angle=25, max_distance=None, max_feat
         verbose=True,
     )
     new_mesh = Mesh(mesh.cells_dict['triangle'], mesh.points)
+    return new_mesh
+
+@time_it # Print runtime information for all calls of this
+def poisson_reconstruction(mesh):
+    """
+    Creates watertight surfaces from point cloud with normals.
+    """
+    ms = ml.MeshSet()
+    ms.add_mesh(ml.Mesh(mesh.V, mesh.F))
+    ms.compute_normal_for_point_clouds()
+    ms.generate_surface_reconstruction_screened_poisson()
+    F = ms.current_mesh().face_matrix()
+    V = ms.current_mesh().vertex_matrix()
+    new_mesh = Mesh(F, V)
     return new_mesh
 
 @time_it # Print runtime information for all calls of this
