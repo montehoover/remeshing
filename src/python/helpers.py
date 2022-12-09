@@ -585,12 +585,14 @@ def run_alg(func, orig_mesh, params, mesh_filename, alg_descriptor, outfile=sys.
     if to_bem:
         write_bem_files(new_mesh, new_filename)
     stats = get_mesh_stats(new_mesh, orig_mesh, run_haus, stats_dict)
+    print_mesh_stats(stats, name=new_filename, file=outfile)
     if not stats["is_correct"] and clean_flag:
         print(f"Found the following issues: {stats['msg']}")
         new_mesh = clean_mesh(new_mesh)
         new_filename = edit_filename(new_filename, "cleaned")
         write_mesh_to_file(new_mesh, new_filename)
-    print_mesh_stats(stats, name=new_filename, file=outfile)
+        stats = get_mesh_stats(new_mesh, orig_mesh, run_haus, stats_dict)
+        print_mesh_stats(stats, name=new_filename, file=outfile)
     return new_mesh
 
 
