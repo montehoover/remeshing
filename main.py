@@ -10,6 +10,7 @@ def run(config):
     bem_flag = config["write_bem_files"]
     clean_flag = config["clean"]
     results_file = config["results_file"]
+    stats_flag = config["stats_flag"]
     stats_dict = {}
     for filename in config["meshes"]:
         print(f"Processing {filename}...")
@@ -27,7 +28,7 @@ def run(config):
         alg_descriptor = ""
         alg = print_stats_only
         params = {"filename": edit_filename(filename, alg_descriptor)}
-        new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, clean_flag=clean_flag, run_haus=False)
+        new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, stats_dict, stats_flag, clean_flag=clean_flag, run_haus=False)
 
         #######################################
         # Enter any remeshing algorithms here
@@ -36,46 +37,51 @@ def run(config):
         # alg_descriptor = "iso_same"
         # alg = remesh_isotropic
         # params = {"target_num_faces": original_mesh.n_faces * 1.02, "iterations": 9}
-        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, clean_flag=clean_flag, run_haus=True)
+        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, stats_dict, stats_flag, clean_flag=clean_flag, run_haus=True)
 
         # alg_descriptor = "iso_2mm"
         # alg = remesh_isotropic
         # params = {"target_edge_len": 2.0, "iterations": 9}
         # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, clean_flag=clean_flag, run_haus=True)
 
-        # alg_descriptor = "optimesh_CVT"
-        # alg = remesh_optimesh
-        # params = {"alg": "CVT (full)"}
-        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, clean_flag=clean_flag, run_haus=True)
+        # # alg_descriptor = "optimesh_CVT"
+        # # alg = remesh_optimesh
+        # # params = {"alg": "CVT (full)"}
+        # # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, stats_dict, stats_flag, clean_flag=clean_flag, run_haus=True)
 
         # alg_descriptor = "optimesh_ODT"
         # alg = remesh_optimesh
         # params = {"alg": "ODT (fixed-point)"}
-        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, clean_flag=clean_flag, run_haus=True)
+        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, stats_dict, stats_flag, clean_flag=clean_flag, run_haus=True)
 
         # alg_descriptor = "optimesh_CPT"
         # alg = remesh_optimesh
         # params = {"alg": "CPT (linear-solve)"}
-        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, clean_flag=clean_flag, run_haus=True)
+        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, stats_dict, stats_flag, clean_flag=clean_flag, run_haus=True)
 
-        # # Intended only for point clouds
-        # alg_descriptor = "poisson"
-        # alg = poisson_reconstruction
-        # params = {}
-        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, clean_flag=clean_flag, run_haus=False)
+        # alg_descriptor = "cgal2"
+        # alg = remesh_cgal
+        # params = {"target_edge_len":  original_mesh.avg_edge_len(), "min_angle": 25, "max_distance": original_mesh.avg_edge_len() / 20}
+        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, stats_dict, stats_flag, clean_flag=clean_flag, run_haus=True)
+
+        # # # Intended only for point clouds
+        # # alg_descriptor = "poisson"
+        # # alg = poisson_reconstruction
+        # # params = {}
+        # # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, clean_flag=clean_flag, run_haus=False)
 
         # # Print stats comparison between mesh listed in config.yml and another mesh with the same name and <alg_descriptor> added
         # alg_descriptor = "parametric"
         # alg = print_stats_only
         # params = {"filename": edit_filename(filename, alg_descriptor)}
-        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, clean_flag=clean_flag, run_haus=True)
+        # new_mesh = run_alg(alg, original_mesh, params, filename, alg_descriptor, results_file, plot_flag, rerun_flag, bem_flag, stats_dict, stats_flag, clean_flag=clean_flag, run_haus=True)
 
         #######################################
         # End of algorithms
         #######################################
 
-    if stats_dict:
-        with open("results.pkl", "wb") as f:
+    if stats_flag:
+        with open(config["stats_file"], "wb") as f:
             pickle.dump(stats_dict, f)
     print(f"Successfully processed {len(config['meshes'])} meshes.")
     if results_file.name != "<stdout>":
