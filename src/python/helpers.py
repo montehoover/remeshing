@@ -57,6 +57,8 @@ def get_config(args):
     config["force_rerun"] = False
     config["write_bem_files"] = False
     config["clean"] = False
+    config["stats_flag"] = False
+    config["stats_dict_file"] = None
 
     # If yaml config file provided
     if args.config:
@@ -71,6 +73,9 @@ def get_config(args):
         config["meshes"] = meshes
         if yaml_dict["results_file"]:
             config["results_file"] = open(yaml_dict["results_file"], "a")
+        if yaml_dict["stats_file"]:
+            config["stats_file"] = yaml_dict["stats_file"]
+            config["stats_flag"] = True
         config["plot"] = yaml_dict["plot"]
         config["force_rerun"] = yaml_dict["force_rerun"]
         config["write_bem_files"] = yaml_dict["write_bem_files"]
@@ -124,10 +129,11 @@ def get_stats_full(mesh):
     AR_avg, AR_min, AR7, AR4, AR3 = get_AR_stats(AR)
     n_faces = mesh.n_faces
     avg_edge_len = get_avg_edge_len(mesh)
-    if not is_correct:
-        mesh = clean_mesh(mesh)
-    concave_ratio, convex_ratio = get_curvature(mesh)
-    total_curvature = concave_ratio + convex_ratio
+    # if not is_correct:
+    #     mesh = clean_mesh(mesh)
+    # concave_ratio, convex_ratio = get_curvature(mesh)
+    # total_curvature = concave_ratio + convex_ratio
+    concave_ratio, convex_ratio, total_curvature = None, None, None
     return Q, AR, AR_avg, AR_min, AR7, AR4, AR3, min_angle, valence, n_faces, avg_edge_len, concave_ratio, convex_ratio, total_curvature, is_correct, msg
 
 def get_stats_brief(mesh):
@@ -185,7 +191,7 @@ def clean_mesh(mesh):
     print("Cleaning mesh...")
     ms = ml.MeshSet()
     ms.add_mesh(ml.Mesh(mesh.V, mesh.F))
-    ITER_LIMIT = 25
+    ITER_LIMIT = 8
     INNER_LIMIT = 10
     outer_iter = 0
     # Before iterating, first remove any obvious problems that might contribute to manifold/holes issues
@@ -547,13 +553,13 @@ def plot_mesh(mesh):
     mat.plotMesh(matlab_mesh.F, matlab_mesh.V)
 
 
-def get_mesh_stats(mesh, comparison_mesh=None, run_haus=True, stats_dict=None, name="placeholder"):
+def get_mesh_stats(mesh, comparison_mesh=None, run_haus=True, stats_dict=None, stats_flag=None, name="placeholder"):
     if run_haus and comparison_mesh:
         haus_max, haus_mean = get_hausdorff(mesh, comparison_mesh)
     else:
         haus_max = None
         haus_mean = None
-    if stats_dict is None:
+    if not stats_flag:
         Q_exp, AR_avg, min_angle, n_faces, avg_edge_len, is_correct, msg = get_stats_brief(mesh)
     else:
         Q_exp, AR, AR_avg, AR_min, AR7, AR4, AR3, min_angle, valence, n_faces, avg_edge_len, concave, convex, total_curv, is_correct, msg = get_stats_full(mesh)
@@ -595,7 +601,7 @@ def print_mesh_stats(stats, name="placeholder", file=sys.stdout, stats_dict=None
     file.flush() # Force this to be written now instead of at the end of the program
     
 
-def run_alg(func, orig_mesh, params, mesh_filename, alg_descriptor, outfile=sys.stdout, plot=True, force_rerun=False, to_bem=False, stats_dict=None, clean_flag=False, run_haus=True):
+def run_alg(func, orig_mesh, params, mesh_filename, alg_descriptor, outfile=sys.stdout, plot=True, force_rerun=False, to_bem=False, stats_dict=None, stats_flag=False, clean_flag=False, run_haus=True):
     new_filename = get_new_filename(mesh_filename, alg_descriptor)
     if Path(new_filename).exists() and not force_rerun:
         print(f"Recording stats for {new_filename} found on disk.")
@@ -613,14 +619,14 @@ def run_alg(func, orig_mesh, params, mesh_filename, alg_descriptor, outfile=sys.
         plot_mesh(new_mesh)
     if to_bem:
         write_bem_files(new_mesh, new_filename)
-    stats = get_mesh_stats(new_mesh, orig_mesh, run_haus, stats_dict)
+    stats = get_mesh_stats(new_mesh, orig_mesh, run_haus, stats_dict, stats_flag)
     print_mesh_stats(stats, name=new_filename, file=outfile)
     if not stats["is_correct"] and clean_flag:
         print(f"Found the following issues: {stats['msg']}")
         new_mesh = clean_mesh(new_mesh)
         new_filename = edit_filename(new_filename, "cleaned")
         write_mesh_to_file(new_mesh, new_filename)
-        stats = get_mesh_stats(new_mesh, orig_mesh, run_haus, stats_dict)
+        stats = get_mesh_stats(new_mesh, orig_mesh, run_haus, stats_dict, stats_flag)
         print_mesh_stats(stats, name=new_filename, file=outfile)
     return new_mesh
 
