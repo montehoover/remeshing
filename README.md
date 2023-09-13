@@ -1,5 +1,7 @@
 # Remeshing
 
+![](docs/images/remeshed_examples.png)
+
 ## Getting Started
 
 ### Installation:
