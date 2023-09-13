@@ -1,6 +1,6 @@
 # Remeshing
 
-![](docs/images/remeshed_examples.png)
+![](docs/images/remeshed_examples_small.png)
 
 ## Getting Started
 
